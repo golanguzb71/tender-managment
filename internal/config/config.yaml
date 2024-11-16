@@ -1,0 +1,9 @@
+server:
+  port: 8888
+
+database:
+  port: 5432
+  host: "localhost"
+  password: "postgres"
+  username: "postgres"
+  db_name: "postgres"
