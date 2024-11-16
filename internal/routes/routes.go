@@ -19,5 +19,10 @@ func SetupRoutes(r *gin.Engine) {
 		client.PUT("/tenders/:id", utils.AuthMiddleware([]string{"client"}), controller.UpdateTenderStatus)
 		client.DELETE("/tenders/:id", utils.AuthMiddleware([]string{"client"}), controller.DeleteTender)
 	}
-	
+	r.POST("/api/contractor/bids/create", utils.AuthMiddleware([]string{"contractor"}), controller.CreateBidHandler)
+	r.GET("/api/contractor/bids", utils.AuthMiddleware([]string{"client", "contractor"}), controller.GetBidsByTenderIDHandler)
+	r.GET("/api/contractor/bids/get", utils.AuthMiddleware([]string{"client", "contractor"}), controller.GetBidByIDHandler)
+	r.DELETE("/api/contractor/bids/delete", utils.AuthMiddleware([]string{"contractor"}), controller.DeleteBidHandler)
+	r.PUT("/api/contractor/bids/update", utils.AuthMiddleware([]string{"contractor"}), controller.UpdateBidStatusHandler)
+
 }
