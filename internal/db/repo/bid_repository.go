@@ -7,21 +7,17 @@ import (
 	"tender-managment/internal/model"
 )
 
-// BidRepository provides methods to interact with the bids table
 type BidRepository struct {
 	db *sql.DB
 }
 
-// NewBidRepository creates a new instance of BidRepository
 func NewBidRepository(db *sql.DB) *BidRepository {
 	return &BidRepository{db: db}
 }
 
 func (r *BidRepository) UpdateBidStatus(bid *model.Bid) error {
-	// Prepare the SQL query to update the bid's status
 	query := `UPDATE bids SET status = $1 WHERE id = $2 AND contractor_id = $3 RETURNING id, contractor_id, tender_id, price, delivery_time, comments, status`
 
-	// Execute the query and get the updated bid details
 	err := r.db.QueryRow(query, bid.Status, bid.ID, bid.ContractorID).Scan(&bid.ID, &bid.ContractorID, &bid.TenderID, &bid.Price, &bid.DeliveryTime, &bid.Comments, &bid.Status)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -36,27 +32,21 @@ func (r *BidRepository) UpdateBidStatus(bid *model.Bid) error {
 func (r *BidRepository) GetBidsByContractorID(contractorID int) ([]model.Bid, error) {
 	var bids []model.Bid
 
-	// Define the query with PostgreSQL-style placeholders
 	query := `SELECT id, contractor_id, tender_id, price, delivery_time, comments, created_at 
 			  FROM bids WHERE contractor_id = $1`
 
-	// Execute the query
 	rows, err := r.db.Query(query, contractorID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching bids: %w", err)
 	}
-	defer rows.Close() // Ensure the rows are closed after processing
 
-	// Iterate over the result set
 	for rows.Next() {
 		var bid model.Bid
 		if err := rows.Scan(&bid.ID, &bid.ContractorID, &bid.TenderID, &bid.Price, &bid.DeliveryTime, &bid.Comments, &bid.CreatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning bid row: %w", err)
 		}
-		bids = append(bids, bid) // Add the bid to the slice
 	}
 
-	// Check for errors encountered during the row iteration
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
@@ -64,7 +54,6 @@ func (r *BidRepository) GetBidsByContractorID(contractorID int) ([]model.Bid, er
 	return bids, nil
 }
 
-// CreateBid creates a new bid in the database
 func (r *BidRepository) CreateBid(bid model.Bid) (*model.Bid, error) {
 	query := `
 		INSERT INTO bids (tender_id, contractor_id, price, delivery_time, comments, status, created_at, updated_at)
@@ -79,7 +68,6 @@ func (r *BidRepository) CreateBid(bid model.Bid) (*model.Bid, error) {
 	return &bid, nil
 }
 
-// GetBidsByTenderID retrieves all bids for a specific tender
 func (r *BidRepository) GetBidsByTenderID(tenderID int) ([]model.Bid, error) {
 	var bids []model.Bid
 	query := `
@@ -109,7 +97,6 @@ func (r *BidRepository) GetBidsByTenderID(tenderID int) ([]model.Bid, error) {
 	return bids, nil
 }
 
-// GetBidByID retrieves a bid by its ID
 func (r *BidRepository) GetBidByID(id int) (*model.Bid, error) {
 	var bid model.Bid
 	query := `
@@ -124,7 +111,6 @@ func (r *BidRepository) GetBidByID(id int) (*model.Bid, error) {
 	return &bid, nil
 }
 
-// DeleteBid deletes a bid from the database
 func (r *BidRepository) DeleteBid(id int) error {
 	query := `
 		DELETE FROM bids
@@ -137,7 +123,6 @@ func (r *BidRepository) DeleteBid(id int) error {
 	return nil
 }
 
-// AwardBid updates the status of a bid to 'awarded'
 func (r *BidRepository) AwardBid(bidID int) error {
 	query := `
 		UPDATE bids

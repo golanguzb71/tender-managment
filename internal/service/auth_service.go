@@ -24,7 +24,7 @@ func (as *AuthService) RegisterUser(username, email, password, role string) (str
 		return "", errors.New("username or email cannot be empty")
 	}
 
-	if strings.Contains(email, "-") && !strings.Contains(email, "@gmail.com") {
+	if strings.Contains(email, "-") && !strings.Contains(email, "@") {
 		return "", errors.New("invalid email format")
 	}
 

@@ -16,7 +16,6 @@ func SetBidService(bidSer *service.BidService) {
 	bidService = bidSer
 }
 
-// CreateBidHandler handles bid submission
 func CreateBidHandler(c *gin.Context) {
 	tenderId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -33,9 +32,8 @@ func CreateBidHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid bid data"})
 		return
 	}
-	contractorId := c.GetInt("user_id") // Assuming the contractor ID comes from the JWT token
+	contractorId := c.GetInt("user_id")
 
-	// Create the bid
 	createdBid, status, err := bidService.CreateBid(contractorId, tenderId, bid)
 	if err != nil {
 		c.JSON(status, gin.H{"message": err.Error()})
@@ -45,7 +43,6 @@ func CreateBidHandler(c *gin.Context) {
 	c.JSON(status, createdBid)
 }
 
-// GetBidsByTenderID retrieves all bids for a specific tender (Client view)
 func GetBidsByTenderID(c *gin.Context) {
 	tenderId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -53,7 +50,6 @@ func GetBidsByTenderID(c *gin.Context) {
 		return
 	}
 
-	// Get the bids for the tender
 	bids, err := bidService.GetBidsByTenderID(tenderId, c.GetInt("user_id"))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -70,9 +66,8 @@ func GetBidByIDHandler(c *gin.Context) {
 		return
 	}
 
-	contractorId := c.GetInt("user_id") // Assuming this is a utility to extract the contractor ID from the token
+	contractorId := c.GetInt("user_id")
 
-	// Get the specific bid
 	bid, err := bidService.GetBidByID(contractorId, bidId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -82,9 +77,8 @@ func GetBidByIDHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, bid)
 }
 
-// UpdateBidStatusHandler handles the request to update the status of a bid.
 func UpdateBidStatusHandler(c *gin.Context) {
-	contractorId := c.GetInt("user_id") // Assuming user_id is extracted from the token
+	contractorId := c.GetInt("user_id")
 	bidId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bid ID"})
@@ -95,36 +89,31 @@ func UpdateBidStatusHandler(c *gin.Context) {
 		Status string `json:"status"`
 	}
 
-	// Bind the status from the request body
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
 
-	// Get the bid by ID and ensure it's the contractor's bid
 	bid, err := bidService.GetBidByID(contractorId, bidId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Update the bid status
 	err = bidService.UpdateBidStatus(contractorId, bidId, updateData.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update bid status"})
 		return
 	}
 
-	// Respond with the updated bid
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Bid status updated successfully",
-		"bid":     bid, // You can choose to return the updated bid if needed
+		"bid":     bid,
 	})
 }
 
-// GetBidsByContractor retrieves all bids placed by a contractor
 func GetBidsByContractor(c *gin.Context) {
-	contractorId := c.GetInt("user_id") // Assuming this is a utility to extract user ID from the token
+	contractorId := c.GetInt("user_id")
 	bids, err := bidService.GetBidsByContractor(contractorId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bids"})
@@ -134,7 +123,6 @@ func GetBidsByContractor(c *gin.Context) {
 	c.JSON(http.StatusOK, bids)
 }
 
-// DeleteBidHandler deletes a contractor's bid
 func DeleteBidHandler(c *gin.Context) {
 	bidId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -145,14 +133,13 @@ func DeleteBidHandler(c *gin.Context) {
 	contractorId := c.GetInt("user_id")
 	err = bidService.DeleteBid(contractorId, bidId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bid deleted successfully"})
 }
 
-// AwardBidHandler allows the client to award a bid
 func AwardBidHandler(c *gin.Context) {
 	tenderId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -166,12 +153,11 @@ func AwardBidHandler(c *gin.Context) {
 		return
 	}
 
-	clientId := c.GetInt("user_id") // Extract client ID from the token
+	clientId := c.GetInt("user_id")
 
-	// Award the bid
 	err = bidService.AwardBid(clientId, tenderId, bidId)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"nessage": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
 
