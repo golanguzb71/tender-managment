@@ -32,9 +32,9 @@ CREATE TABLE bids
     price         NUMERIC(15, 2) CHECK (price > 0),
     delivery_time INT CHECK (delivery_time > 0),
     comments      TEXT,
-    status        VARCHAR(10) CHECK (status IN ('submitted', 'rejected')) DEFAULT 'submitted',
-    created_at    TIMESTAMP                                               DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP                                               DEFAULT CURRENT_TIMESTAMP
+    status        VARCHAR(10) CHECK (status IN ('pending', 'awarded', 'rejected')) DEFAULT 'pending',
+    created_at    TIMESTAMP                                                        DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP                                                        DEFAULT CURRENT_TIMESTAMP
 );
 
 

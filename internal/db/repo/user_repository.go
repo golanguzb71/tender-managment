@@ -59,3 +59,17 @@ func (ur *UserRepository) CreateUser(username, email, password, role string) (in
 	}
 	return userID, nil
 }
+
+func (ur *UserRepository) GetUserByID(id int) (*User, error) {
+	var user User
+	query := `
+		SELECT id, username, password, email, role, created_at, updated_at
+		FROM users
+		WHERE id = $1;
+	`
+	err := ur.db.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.Password, &user.Email, &user.Role)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user with ID %d: %w", id, err)
+	}
+	return &user, nil
+}

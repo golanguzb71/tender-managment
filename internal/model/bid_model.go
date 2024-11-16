@@ -14,6 +14,12 @@ type Bid struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+type CreateBid struct {
+	Price        float64 `json:"price"`
+	DeliveryTime int     `json:"delivery_time"`
+	Comments     string  `json:"comments"`
+}
+
 const (
 	BidStatusPending  = "pending"
 	BidStatusAwarded  = "awarded"

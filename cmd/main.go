@@ -32,7 +32,7 @@ func main() {
 	tenderRepo := repository.NewTenderRepository(database)
 	tenderService := service.NewTenderService(tenderRepo)
 	bidRepo := repository.NewBidRepository(database)
-	bidService := service.NewBidService(bidRepo)
+	bidService := service.NewBidService(*bidRepo, *tenderRepo, *userRepo)
 	userService := service.NewUserService(userRepo)
 	controller.SetAuthService(authService)
 	controller.SetTenderService(tenderService)
