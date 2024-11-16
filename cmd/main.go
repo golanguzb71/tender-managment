@@ -29,8 +29,15 @@ func main() {
 	database := db.NewDatabase(&cfg.Database)
 	userRepo := repository.NewUserRepository(database)
 	authService := service.NewAuthService(userRepo)
+	tenderRepo := repository.NewTenderRepository(database)
+	tenderService := service.NewTenderService(tenderRepo)
+	bidRepo := repository.NewBidRepository(database)
+	bidService := service.NewBidService(bidRepo)
+	userService := service.NewUserService(userRepo)
 	controller.SetAuthService(authService)
-
+	controller.SetTenderService(tenderService)
+	controller.SetBidService(bidService)
+	controller.SetUserService(userService)
 	routes.SetupRoutes(r)
 	r.Run(":8888")
 }

@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strings"
 	repository "tender-managment/internal/db/repo"
@@ -18,6 +17,9 @@ func NewAuthService(repo *repository.UserRepository) *AuthService {
 }
 
 func (as *AuthService) RegisterUser(username, email, password, role string) (string, error) {
+	if role != "client" && role != "contractor" {
+		return "", errors.New("invalid role")
+	}
 	if username == "" || email == "" {
 		return "", errors.New("username or email cannot be empty")
 	}
@@ -32,17 +34,17 @@ func (as *AuthService) RegisterUser(username, email, password, role string) (str
 		return "", errors.New("Email already exists")
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := utils.EncodePassword(password)
 	if err != nil {
 		return "", err
 	}
 
-	userId, err := as.repo.CreateUser(username, email, string(hashedPassword), role)
+	userId, err := as.repo.CreateUser(username, email, hashedPassword, role)
 	if err != nil {
 		return "", err
 	}
 
-	token, err := utils.GenerateToken(userId)
+	token, err := utils.GenerateToken(userId, role)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +67,7 @@ func (as *AuthService) AuthenticateUser(username, password string) (string, int,
 		return "", http.StatusUnauthorized, errors.New("Invalid username or password")
 	}
 
-	token, err := utils.GenerateToken(user.ID)
+	token, err := utils.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		return "", http.StatusBadRequest, err
 	}

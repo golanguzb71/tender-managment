@@ -11,15 +11,16 @@ CREATE TABLE users
 
 CREATE TABLE tenders
 (
-    id          SERIAL PRIMARY KEY,
-    client_id   INT          NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    title       VARCHAR(255) NOT NULL,
-    description TEXT,
-    deadline    DATE         NOT NULL,
-    budget      NUMERIC(15, 2) CHECK (budget > 0),
-    status      VARCHAR(10) CHECK (status IN ('open', 'closed', 'awarded')) DEFAULT 'open',
-    created_at  TIMESTAMP                                                   DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP                                                   DEFAULT CURRENT_TIMESTAMP
+    id              SERIAL PRIMARY KEY,
+    client_id       INT          NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    title           VARCHAR(255) NOT NULL,
+    description     TEXT,
+    deadline        DATE         NOT NULL,
+    budget          NUMERIC(15, 2) CHECK (budget > 0),
+    status          VARCHAR(10) CHECK (status IN ('open', 'closed', 'awarded')) DEFAULT 'open',
+    attachment_path varchar,
+    created_at      TIMESTAMP                                                   DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP                                                   DEFAULT CURRENT_TIMESTAMP
 );
 
 
