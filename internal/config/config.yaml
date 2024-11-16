@@ -3,7 +3,7 @@ server:
 
 database:
   port: 5432
-  host: "localhost"
+  host: "db"
   password: "postgres"
   username: "postgres"
-  db_name: "postgres"
+  db_name: "tenderdb"

@@ -23,7 +23,7 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	file, err := os.Open("internal/config/config.yaml")
+	file, err := os.Open("config.yaml")
 	if err != nil {
 		return nil, err
 	}

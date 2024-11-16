@@ -1,4 +1,4 @@
-CREATE TABLE users
+CREATE TABLE IF NOT EXISTS users
 (
     id         SERIAL PRIMARY KEY,
     username   VARCHAR(100)                                         NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE users
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE tenders
+CREATE TABLE IF NOT EXISTS tenders
 (
     id              SERIAL PRIMARY KEY,
     client_id       INT          NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -24,7 +24,7 @@ CREATE TABLE tenders
 );
 
 
-CREATE TABLE bids
+CREATE TABLE IF NOT EXISTS bids
 (
     id            SERIAL PRIMARY KEY,
     tender_id     INT NOT NULL REFERENCES tenders (id) ON DELETE CASCADE,
@@ -38,7 +38,7 @@ CREATE TABLE bids
 );
 
 
-CREATE TABLE notifications
+CREATE TABLE IF NOT EXISTS notifications
 (
     id          SERIAL PRIMARY KEY,
     user_id     INT  NOT NULL REFERENCES users (id) ON DELETE CASCADE,
