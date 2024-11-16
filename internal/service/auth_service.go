@@ -3,8 +3,9 @@ package service
 import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"net/http"
+	"strings"
 	repository "tender-managment/internal/db/repo"
-
 	"tender-managment/internal/utils"
 )
 
@@ -17,13 +18,18 @@ func NewAuthService(repo *repository.UserRepository) *AuthService {
 }
 
 func (as *AuthService) RegisterUser(username, email, password, role string) (string, error) {
-	user, err := as.repo.GetUserByEmail(email)
-	if err != nil && err.Error() != "user not found" {
-		return "", err
+	if username == "" || email == "" {
+		return "", errors.New("username or email cannot be empty")
 	}
 
+	if strings.Contains(email, "-") && !strings.Contains(email, "@gmail.com") {
+		return "", errors.New("invalid email format")
+	}
+
+	user, _ := as.repo.GetUserByEmail(email)
+
 	if user != nil {
-		return "", errors.New("email already exists")
+		return "", errors.New("Email already exists")
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -44,21 +50,25 @@ func (as *AuthService) RegisterUser(username, email, password, role string) (str
 	return token, nil
 }
 
-func (as *AuthService) AuthenticateUser(username, password string) (string, error) {
-	user, err := as.repo.GetUserByUsername(username)
-	if err != nil {
-		return "", errors.New("user not found")
+func (as *AuthService) AuthenticateUser(username, password string) (string, int, error) {
+	if username == "" || password == "" {
+		return "", http.StatusBadRequest, errors.New("Username and password are required")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	user, err := as.repo.GetUserByUsername(username)
 	if err != nil {
-		return "", errors.New("invalid username or password")
+		return "", http.StatusNotFound, errors.New("User not found")
+	}
+
+	err = utils.ComparePasswords(user.Password, password)
+	if err != nil {
+		return "", http.StatusUnauthorized, errors.New("Invalid username or password")
 	}
 
 	token, err := utils.GenerateToken(user.ID)
 	if err != nil {
-		return "", err
+		return "", http.StatusBadRequest, err
 	}
 
-	return token, nil
+	return token, http.StatusOK, nil
 }

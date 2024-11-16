@@ -43,7 +43,7 @@ func (ur *UserRepository) GetUserByUsername(username string) (*User, error) {
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
+			return nil, fmt.Errorf("error fetching user: %v", err)
 		}
 		return nil, fmt.Errorf("error fetching user: %v", err)
 	}

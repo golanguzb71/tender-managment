@@ -1,2 +1,2 @@
 swagger:
-	@swag init --dir ./cmd
+	swag init -g cmd/main.go

@@ -12,6 +12,14 @@ import (
 	"tender-managment/internal/service"
 )
 
+// @title Tender Managment Swagger
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
 func main() {
 	r := gin.Default()
 	cfg, err := config.LoadConfig()

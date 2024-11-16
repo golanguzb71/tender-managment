@@ -1,4 +1,93 @@
+definitions:
+  model.LoginModel:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  model.RegisterModel:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact: {}
-paths: {}
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Tender Managment Swagger
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns an authentication token
+      parameters:
+      - description: User Login Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login an existing user
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user and returns an authentication token
+      parameters:
+      - description: User Registration Payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterModel'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

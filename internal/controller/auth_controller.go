@@ -3,8 +3,8 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"tender-managment/internal/model"
 	"tender-managment/internal/service"
-	"tender-managment/internal/utils"
 )
 
 var (
@@ -21,30 +21,31 @@ func SetAuthService(authSer *service.AuthService) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param payload body struct{ Username string `json:"username"`, Email string `json:"email"`, Password string `json:"password"`, Role string `json:"role"`} true "User Registration Payload"
-// @Success 201 {object} utils.Response{message=string, data=object{token=string}}
-// @Failure 400 {object} utils.Response{message=string, data=object{}}
+// @Param payload body model.RegisterModel true "User Registration Payload"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
 // @Router /register [post]
 func Register(c *gin.Context) {
-	var payload struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-		Role     string `json:"role"`
-	}
-
+	var payload model.RegisterModel
 	if err := c.BindJSON(&payload); err != nil {
-		utils.Response(c, http.StatusBadRequest, "Invalid input", nil)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid input",
+		})
 		return
 	}
 
 	token, err := authService.RegisterUser(payload.Username, payload.Email, payload.Password, payload.Role)
 	if err != nil {
-		utils.Response(c, http.StatusBadRequest, err.Error(), nil)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+		})
 		return
 	}
 
-	utils.Response(c, http.StatusCreated, "User registered successfully", gin.H{"token": token})
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "User registered successfully",
+		"token":   token,
+	})
 }
 
 // Login godoc
@@ -53,27 +54,31 @@ func Register(c *gin.Context) {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param payload body struct{ Username string `json:"username"`, Password string `json:"password"`} true "User Login Payload"
-// @Success 200 {object} utils.Response{message=string, data=object{token=string}}
-// @Failure 400 {object} utils.Response{message=string, data=object{}}
-// @Failure 401 {object} utils.Response{message=string, data=object{}}
+// @Param payload body model.LoginModel true "User Login Payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
 // @Router /login [post]
 func Login(c *gin.Context) {
-	var payload struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var payload model.LoginModel
 
 	if err := c.BindJSON(&payload); err != nil {
-		utils.Response(c, http.StatusBadRequest, "Invalid input", nil)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Invalid input",
+		})
 		return
 	}
 
-	token, err := authService.AuthenticateUser(payload.Username, payload.Password)
+	token, status, err := authService.AuthenticateUser(payload.Username, payload.Password)
 	if err != nil {
-		utils.Response(c, http.StatusUnauthorized, err.Error(), nil)
+		c.JSON(status, gin.H{
+			"message": err.Error(),
+		})
 		return
 	}
 
-	utils.Response(c, http.StatusOK, "Login successful", gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Login successful",
+		"token":   token,
+	})
 }
