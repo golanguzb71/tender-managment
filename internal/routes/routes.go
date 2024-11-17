@@ -31,5 +31,5 @@ func SetupRoutes(r *gin.Engine) {
 	user := r.Group("/api/users")
 	user.GET("/:id/bids", utils.AuthMiddleware([]string{"client", "contractor"}), controller.GetContractorBidHistory)
 	user.GET("/:id/tenders", utils.AuthMiddleware([]string{"client", "contractor"}), controller.GetClientTenderHistory)
-
+	user.GET("/notification/ws", utils.WebSocketHandler)
 }

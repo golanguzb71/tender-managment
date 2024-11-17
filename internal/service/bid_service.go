@@ -44,18 +44,18 @@ func (s *BidService) GetBidsByContractor(contractorID int) ([]model.Bid, error) 
 	return bids, nil
 }
 
-func (s *BidService) CreateBid(contractorID int, tenderID int, bid model.CreateBid) (*model.Bid, int, error) {
+func (s *BidService) CreateBid(contractorID int, tenderID int, bid model.CreateBid) (*model.Bid, *model.Tender, int, error) {
 	tender, err := s.tenderRepo.GetTenderByID(tenderID)
 	if err != nil {
-		return nil, http.StatusNotFound, fmt.Errorf("Tender not found")
+		return nil, nil, http.StatusNotFound, fmt.Errorf("Tender not found")
 	}
 
 	if tender.Status != "open" {
-		return nil, http.StatusBadRequest, fmt.Errorf("Tender is not open for bids")
+		return nil, nil, http.StatusBadRequest, fmt.Errorf("Tender is not open for bids")
 	}
 
 	if bid.Price <= 0 || bid.DeliveryTime <= 0 || bid.Comments == "" {
-		return nil, http.StatusBadRequest, errors.New("invalid bid data")
+		return nil, nil, http.StatusBadRequest, errors.New("invalid bid data")
 	}
 	var newBid model.Bid
 	newBid.Price = bid.Price
@@ -66,10 +66,14 @@ func (s *BidService) CreateBid(contractorID int, tenderID int, bid model.CreateB
 	newBid.Status = model.BidStatusPending
 	createdBid, err := s.bidRepo.CreateBid(newBid)
 	if err != nil {
-		return nil, http.StatusBadRequest, fmt.Errorf("failed to create bid: %w", err)
+		return nil, nil, http.StatusBadRequest, fmt.Errorf("failed to create bid: %w", err)
 	}
 
-	return createdBid, http.StatusCreated, nil
+	tender, err = s.tenderRepo.GetTenderByID(tenderID)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	return createdBid, tender, http.StatusCreated, nil
 }
 func (s *BidService) GetBidsByTenderID(tenderID, userId int, priceFilter float64, deliveryTimeFilter, sortBy string) ([]model.Bid, error) {
 	tender, err := s.tenderRepo.GetTenderByID(tenderID)
@@ -136,26 +140,26 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-func (s *BidService) AwardBid(clientID int, tenderID int, bidID int) error {
+func (s *BidService) AwardBid(clientID int, tenderID int, bidID int) (error, *string, *int) {
 	tender, err := s.tenderRepo.GetTenderByID(tenderID)
 	if err != nil || tender.ClientID != clientID {
-		return fmt.Errorf("Tender not found or access denied")
+		return fmt.Errorf("Tender not found or access denied"), nil, nil
 	}
 
 	bid, err := s.bidRepo.GetBidByID(bidID)
 	if err != nil {
-		return fmt.Errorf("Bid not found")
+		return fmt.Errorf("Bid not found"), nil, nil
 	}
 	fmt.Println(bid)
 	err = s.bidRepo.AwardBid(bidID)
 	if err != nil {
-		return fmt.Errorf("failed to award bid: %w", err)
+		return fmt.Errorf("failed to award bid: %w", err), nil, nil
 	}
 
 	err = s.tenderRepo.UpdateTenderStatus(tenderID, "awarded")
 	if err != nil {
-		return fmt.Errorf("failed to update tender status: %w", err)
+		return fmt.Errorf("failed to update tender status: %w", err), nil, nil
 	}
 
-	return nil
+	return nil, &tender.Title, &bid.ContractorID
 }
