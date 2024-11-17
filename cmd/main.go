@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
 	_ "tender-managment/docs"
@@ -27,6 +28,8 @@ func main() {
 		log.Fatalf("error while loading config %v", err)
 	}
 	database := db.NewDatabase(&cfg.Database)
+	redis := db.NewRedisClient(&cfg.Database)
+	fmt.Println(redis)
 	userRepo := repository.NewUserRepository(database)
 	authService := service.NewAuthService(userRepo)
 	tenderRepo := repository.NewTenderRepository(database)

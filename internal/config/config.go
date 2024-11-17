@@ -10,20 +10,29 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
+	Postgres Postgres `yaml:"postgres"`
+	Redis    Redis    `yaml:"redis"`
+}
+type Redis struct {
+	Address  string `yaml:"address"`
+	Password string `yaml:"password"`
+	DBName   int    `yaml:"db_name"`
+}
+
+type Postgres struct {
 	Port     string `yaml:"port"`
 	Host     string `yaml:"host"`
 	Password string `yaml:"password"`
 	Username string `yaml:"username"`
 	DBName   string `yaml:"db_name"`
 }
-
 type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
 }
 
 func LoadConfig() (*Config, error) {
-	file, err := os.Open("config.yaml")
+	file, err := os.Open("internal/config/config.yaml")
 	if err != nil {
 		return nil, err
 	}

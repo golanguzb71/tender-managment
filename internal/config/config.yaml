@@ -2,8 +2,13 @@ server:
   port: 8888
 
 database:
-  port: 5432
-  host: "db"
-  password: "postgres"
-  username: "postgres"
-  db_name: "tenderdb"
+  postgres:
+    port: 5432
+    host: "localhost"
+    password: "postgres"
+    username: "postgres"
+    db_name: "postgres"
+  redis:
+    address: "localhost:6379"
+    password:
+    db_name: 0  

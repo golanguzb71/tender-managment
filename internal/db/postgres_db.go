@@ -13,11 +13,11 @@ func NewDatabase(databaseConf *config.DatabaseConfig) *sql.DB {
 
 	connStr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		databaseConf.Username,
-		databaseConf.Password,
-		databaseConf.Host,
-		databaseConf.Port,
-		databaseConf.DBName,
+		databaseConf.Postgres.Username,
+		databaseConf.Postgres.Password,
+		databaseConf.Postgres.Host,
+		databaseConf.Postgres.Port,
+		databaseConf.Postgres.DBName,
 		"disable",
 	)
 
