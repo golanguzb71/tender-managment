@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	repository "tender-managment/internal/db/repo"
 )
 
 type WebSocketManager struct {
@@ -63,14 +64,20 @@ func WebSocketHandler(c *gin.Context) {
 	wsManager.mutex.Unlock()
 }
 
-func SendNotification(userID int, message string) {
+func SendNotification(repo repository.BidRepository, userID int, message string, relationID string, relationType string) {
+	err := repo.CreateNotification(userID, message, relationID, relationType)
+	if err != nil {
+		log.Println("Error inserting notification:", err)
+		return
+	}
+
 	wsManager.mutex.Lock()
 	defer wsManager.mutex.Unlock()
 
 	if conn, ok := wsManager.connections[userID]; ok {
 		err := conn.WriteMessage(websocket.TextMessage, []byte(message))
 		if err != nil {
-			log.Println("Error sending notification:", err)
+			log.Println("Error sending WebSocket notification:", err)
 		}
 	}
 }

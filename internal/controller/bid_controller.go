@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"tender-managment/internal/model"
 	"tender-managment/internal/service"
-	"tender-managment/internal/utils"
 )
 
 var (
@@ -48,14 +47,11 @@ func CreateBidHandler(c *gin.Context) {
 	}
 	contractorId := c.GetInt("user_id")
 
-	createdBid, tender, status, err := bidService.CreateBid(contractorId, tenderId, bid)
+	createdBid, status, err := bidService.CreateBid(contractorId, tenderId, bid)
 	if err != nil {
 		c.JSON(status, gin.H{"message": err.Error()})
 		return
 	}
-
-	message := "A contractor has submitted a bid for your tender: " + tender.Title
-	utils.SendNotification(tender.ClientID, message)
 
 	c.JSON(status, createdBid)
 }
@@ -255,13 +251,11 @@ func AwardBidHandler(c *gin.Context) {
 
 	clientId := c.GetInt("user_id")
 
-	err, tenderTitle, contractorId := bidService.AwardBid(clientId, tenderId, bidId)
+	err = bidService.AwardBid(clientId, tenderId, bidId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
-	message := "Your bid has been awarded for tender: " + *tenderTitle
-	utils.SendNotification(*contractorId, message)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bid awarded successfully"})
 }

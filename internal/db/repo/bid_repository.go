@@ -207,3 +207,17 @@ func (r *BidRepository) GetBidsByTenderIDWithFilters(tenderID int, priceFilter f
 
 	return bids, nil
 }
+
+func (r *BidRepository) CreateNotification(userID int, message string, relationID string, relationType string) error {
+	query := `
+		INSERT INTO notifications (user_id, message, relation_id, type)
+		VALUES ($1, $2, $3, $4)
+	`
+
+	_, err := r.db.Exec(query, userID, message, relationID, relationType)
+	if err != nil {
+		return fmt.Errorf("failed to create notification: %w", err)
+	}
+
+	return nil
+}
