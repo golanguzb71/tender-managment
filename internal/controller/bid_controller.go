@@ -344,6 +344,18 @@ func AwardBidHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Bid awarded successfully"})
 }
 
+// GetContractorBidHistory godoc
+// @Summary Retrieve Contractor's Bid History
+// @Description Retrieves a list of bids placed by a specific contractor
+// @Tags User
+// @Produce json
+// @Param id path int true "Contractor ID"
+// @Success 200 {array} model.Bid "List of bids placed by the contractor"
+// @Failure 400 {object} map[string]string "Invalid contractor ID"
+// @Failure 404 {object} map[string]string "No bids found for the contractor"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Security Bearer
+// @Router /api/users/{id}/bids [get]
 func GetContractorBidHistory(ctx *gin.Context) {
 	contractorID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
