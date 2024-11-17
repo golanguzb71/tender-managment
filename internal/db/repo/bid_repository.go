@@ -37,14 +37,17 @@ func (r *BidRepository) GetBidsByContractorID(contractorID int) ([]model.Bid, er
 
 	rows, err := r.db.Query(query, contractorID)
 	if err != nil {
+		fmt.Println("error bo'ldi ichki ", err.Error())
 		return nil, fmt.Errorf("error fetching bids: %w", err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var bid model.Bid
 		if err := rows.Scan(&bid.ID, &bid.ContractorID, &bid.TenderID, &bid.Price, &bid.DeliveryTime, &bid.Comments, &bid.CreatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning bid row: %w", err)
 		}
+		bids = append(bids, bid)
 	}
 
 	if err := rows.Err(); err != nil {

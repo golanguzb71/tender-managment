@@ -20,6 +20,10 @@ type CreateBid struct {
 	Comments     string  `json:"comments"`
 }
 
+type UpdateBid struct {
+	Status string `json:"status"`
+}
+
 const (
 	BidStatusPending  = "pending"
 	BidStatusAwarded  = "awarded"

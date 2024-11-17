@@ -15,10 +15,10 @@ func SetupRoutes(r *gin.Engine) {
 
 	client := r.Group("/api/client")
 	{
-		client.POST("/tenders", utils.AuthMiddleware([]string{"client"}), controller.CreateTender)
-		client.GET("/tenders", utils.AuthMiddleware([]string{"client", "contractor"}), controller.ListTenders)
-		client.PUT("/tenders/:id", utils.AuthMiddleware([]string{"client"}), controller.UpdateTenderStatus)
-		client.DELETE("/tenders/:id", utils.AuthMiddleware([]string{"client"}), controller.DeleteTender)
+		client.POST("/tenders", utils.AuthMiddleware([]string{"client"}), controller.CreateTenderHandler)
+		client.GET("/tenders", utils.AuthMiddleware([]string{"client", "contractor"}), controller.ListTendersHandler)
+		client.PUT("/tenders/:id", utils.AuthMiddleware([]string{"client"}), controller.UpdateTenderStatusHandler)
+		client.DELETE("/tenders/:id", utils.AuthMiddleware([]string{"client"}), controller.DeleteTenderHandler)
 		client.GET("/tenders/:id/bids", utils.AuthMiddleware([]string{"client"}), controller.GetBidsByTenderID)
 		client.POST("/tenders/:id/award/:bidId", utils.AuthMiddleware([]string{"client"}), controller.AwardBidHandler)
 	}

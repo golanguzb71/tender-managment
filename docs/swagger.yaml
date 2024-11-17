@@ -1,4 +1,52 @@
 definitions:
+  model.Bid:
+    properties:
+      comments:
+        type: string
+      contractor_id:
+        type: integer
+      created_at:
+        type: string
+      delivery_time:
+        type: integer
+      id:
+        type: string
+      price:
+        type: number
+      status:
+        type: string
+      tender_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.CreateBid:
+    properties:
+      comments:
+        type: string
+      delivery_time:
+        type: integer
+      price:
+        type: number
+    type: object
+  model.CreateTender:
+    properties:
+      attachment:
+        type: string
+      budget:
+        type: number
+      deadline:
+        type: string
+      description:
+        type: string
+      title:
+        type: string
+    required:
+    - budget
+    - deadline
+    - description
+    - title
+    type: object
   model.LoginModel:
     properties:
       password:
@@ -17,6 +65,39 @@ definitions:
       username:
         type: string
     type: object
+  model.Tender:
+    properties:
+      attachment:
+        type: string
+      budget:
+        type: number
+      client_id:
+        type: integer
+      created_at:
+        type: string
+      deadline:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.UpdateBid:
+    properties:
+      status:
+        type: string
+    type: object
+  model.UpdateTenderStatusRequest:
+    properties:
+      status:
+        type: string
+    type: object
 info:
   contact: {}
   license:
@@ -24,6 +105,415 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Tender Managment Swagger
 paths:
+  /api/client/tenders:
+    get:
+      description: Retrieves a list of tenders for a specific client
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Tender'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: List all tenders for a client
+      tags:
+      - Tender
+    post:
+      consumes:
+      - application/json
+      description: Creates a new tender with provided details
+      parameters:
+      - description: Tender details
+        in: body
+        name: tender
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateTender'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Tender'
+        "400":
+          description: Invalid input or tender data
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new tender
+      tags:
+      - Tender
+  /api/client/tenders/{id}:
+    delete:
+      description: Deletes a tender by ID
+      parameters:
+      - description: Tender ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: Tender deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid tender ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Tender not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a tender
+      tags:
+      - Tender
+    put:
+      consumes:
+      - application/json
+      description: Updates the status of a tender by ID
+      parameters:
+      - description: Tender ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New tender status
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateTenderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tender status updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input or tender status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Tender not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update the status of a tender
+      tags:
+      - Tender
+  /api/client/tenders/{id}/award/{bidId}:
+    post:
+      consumes:
+      - application/json
+      description: Award a specific bid for a tender, indicating it has been selected
+      parameters:
+      - description: Tender ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Bid ID
+        in: path
+        name: bidId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bid awarded successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid tender or bid ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Bid or tender not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Award a bid for a tender
+      tags:
+      - bids
+  /api/client/tenders/{id}/bids:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all bids for a given tender
+      parameters:
+      - description: Tender ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of bids
+          schema:
+            items:
+              $ref: '#/definitions/model.Bid'
+            type: array
+        "400":
+          description: Invalid tender ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: No bids found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all bids for a tender
+      tags:
+      - bids
+  /api/contractor/bids:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all bids submitted by a specific contractor
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of bids
+          schema:
+            items:
+              $ref: '#/definitions/model.Bid'
+            type: array
+        "500":
+          description: Failed to fetch bids
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all bids by a contractor
+      tags:
+      - bids
+  /api/contractor/bids/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific bid by ID
+      parameters:
+      - description: Bid ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bid deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid bid ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Bid not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a bid
+      tags:
+      - bids
+    get:
+      consumes:
+      - application/json
+      description: Retrieve details of a specific bid
+      parameters:
+      - description: Bid ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bid details
+          schema:
+            $ref: '#/definitions/model.Bid'
+        "400":
+          description: Invalid bid ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Bid not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Get bid details by bid ID
+      tags:
+      - bids
+    put:
+      consumes:
+      - application/json
+      description: Update the status of an existing bid (e.g., accepted, rejected)
+      parameters:
+      - description: Bid ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update bid request body
+        in: body
+        name: updateData
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateBid'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bid status updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid bid ID or request data
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Bid not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update bid status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Update the status of a bid
+      tags:
+      - bids
+  /api/contractor/tenders/{id}/bid:
+    post:
+      consumes:
+      - application/json
+      description: Create a bid for a given tender with the specified price, delivery
+        time, and comments
+      parameters:
+      - description: Tender ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Bid Information (e.g., { \
+        in: body
+        name: bid
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateBid'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Details of the created bid
+          schema:
+            $ref: '#/definitions/model.Bid'
+        "400":
+          description: Invalid tender ID or request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a bid for a tender
+      tags:
+      - bids
   /login:
     post:
       consumes:

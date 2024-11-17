@@ -38,6 +38,7 @@ func (s *BidService) GetBidByID(contractorID int, bidID int) (*model.Bid, error)
 func (s *BidService) GetBidsByContractor(contractorID int) ([]model.Bid, error) {
 	bids, err := s.bidRepo.GetBidsByContractorID(contractorID)
 	if err != nil {
+		fmt.Println("error bo'ldi ", err.Error())
 		return nil, fmt.Errorf("failed to fetch bids: %w", err)
 	}
 
