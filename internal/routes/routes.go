@@ -31,15 +31,6 @@ func SetupRoutes(r *gin.Engine) {
 	user := r.Group("/api/users")
 	user.GET("/:id/bids", utils.AuthMiddleware([]string{"client", "contractor"}), controller.GetContractorBidHistory)
 	user.GET("/:id/tenders", utils.AuthMiddleware([]string{"client", "contractor"}), controller.GetClientTenderHistory)
-	// WebSocket route for notifications
-	// @Summary Try to using it by postman
-	// @Description Allows users to receive real-time notifications via WebSocket connection.
-	// @Accept  json
-	// @Produce  json
-	// @Tags User
-	// @Security Bearer
-	// @Success 200 {string} string "Successfully connected to WebSocket."
-	// @Failure 401 {string} string "Unauthorized"
-	// @Router /api/users/notification/ws [get]
+
 	user.GET("/notification/ws", utils.WebSocketHandler)
 }

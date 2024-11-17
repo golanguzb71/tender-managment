@@ -390,3 +390,17 @@ func GetContractorBidHistory(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, bids)
 }
+
+// ManaulWebSocketSwag godoc
+// @Summary Try to using it by postman it is not work on swagger
+// @Description Allows users to receive real-time notifications via WebSocket connection.
+// @Accept  json
+// @Produce  json
+// @Tags User
+// @Security Bearer
+// @Success 200 {string} string "Successfully connected to WebSocket."
+// @Failure 401 {string} string "Unauthorized"
+// @Router /api/users/notification/ws [get]
+func ManaulWebSocketSwag() {
+
+}

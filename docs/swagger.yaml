@@ -615,6 +615,27 @@ paths:
       summary: Retrieve Client's Tender History
       tags:
       - User
+  /api/users/notification/ws:
+    get:
+      consumes:
+      - application/json
+      description: Allows users to receive real-time notifications via WebSocket connection.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully connected to WebSocket.
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+      security:
+      - Bearer: []
+      summary: Try to using it by postman it is not work on swagger
+      tags:
+      - User
   /login:
     post:
       consumes:

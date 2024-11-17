@@ -683,6 +683,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/users/notification/ws": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Allows users to receive real-time notifications via WebSocket connection.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Try to using it by postman it is not work on swagger",
+                "responses": {
+                    "200": {
+                        "description": "Successfully connected to WebSocket.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users/{id}/bids": {
             "get": {
                 "security": [
