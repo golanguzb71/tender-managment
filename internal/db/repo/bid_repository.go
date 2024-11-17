@@ -64,13 +64,27 @@ func (r *BidRepository) GetBidsByContractorID(contractorID int) ([]model.Bid, er
 }
 
 func (r *BidRepository) CreateBid(bid model.Bid) (*model.Bid, error) {
+	var count int
+	err := r.db.QueryRow(`
+		SELECT count(*) 
+		FROM bids 
+		WHERE contractor_id = $1 AND created_at > NOW() - INTERVAL '1 minute'`, bid.ContractorID).Scan(&count)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to check bid submission count: %w", err)
+	}
+
+	if count >= 5 {
+		return nil, fmt.Errorf("rate limit exceeded: you can only submit 5 bids per minute")
+	}
+
 	query := `
 		INSERT INTO bids (tender_id, contractor_id, price, delivery_time, comments, status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		RETURNING id, tender_id, contractor_id, price, delivery_time, comments, status, created_at, updated_at;
 	`
 	row := r.db.QueryRow(query, bid.TenderID, bid.ContractorID, bid.Price, bid.DeliveryTime, bid.Comments, bid.Status)
-	err := row.Scan(&bid.ID, &bid.TenderID, &bid.ContractorID, &bid.Price, &bid.DeliveryTime, &bid.Comments, &bid.Status, &bid.CreatedAt, &bid.UpdatedAt)
+	err = row.Scan(&bid.ID, &bid.TenderID, &bid.ContractorID, &bid.Price, &bid.DeliveryTime, &bid.Comments, &bid.Status, &bid.CreatedAt, &bid.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bid: %w", err)
 	}
