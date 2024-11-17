@@ -38,7 +38,6 @@ func (s *BidService) GetBidByID(contractorID int, bidID int) (*model.Bid, error)
 func (s *BidService) GetBidsByContractor(contractorID int) ([]model.Bid, error) {
 	bids, err := s.bidRepo.GetBidsByContractorID(contractorID)
 	if err != nil {
-		fmt.Println("error bo'ldi ", err.Error())
 		return nil, fmt.Errorf("failed to fetch bids: %w", err)
 	}
 
@@ -72,15 +71,13 @@ func (s *BidService) CreateBid(contractorID int, tenderID int, bid model.CreateB
 
 	return createdBid, http.StatusCreated, nil
 }
-
-func (s *BidService) GetBidsByTenderID(tenderID, userId int) ([]model.Bid, error) {
+func (s *BidService) GetBidsByTenderID(tenderID, userId int, priceFilter float64, deliveryTimeFilter, sortBy string) ([]model.Bid, error) {
 	tender, err := s.tenderRepo.GetTenderByID(tenderID)
 	if err != nil || tender.ClientID != userId {
 		return nil, fmt.Errorf("Tender not found or access denied")
 	}
-	fmt.Println(tender)
 
-	bids, err := s.bidRepo.GetBidsByTenderID(tenderID)
+	bids, err := s.bidRepo.GetBidsByTenderIDWithFilters(tenderID, priceFilter, deliveryTimeFilter, sortBy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch bids: %w", err)
 	}

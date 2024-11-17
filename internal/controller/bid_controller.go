@@ -58,13 +58,17 @@ func CreateBidHandler(c *gin.Context) {
 
 // GetBidsByTenderID godoc
 // @Summary Get all bids for a tender
-// @Description Retrieve all bids for a given tender
+// @Description Retrieve all bids for a given tender, with optional filtering and sorting
 // @Tags bids
 // @Accept json
 // @Produce json
 // @Param id path int true "Tender ID"
+// @Param price query float64 false "Filter bids by price"
+// @Param delivery_time query string false "Filter bids by delivery time"
+// @Param sort_by query string false "Sort by 'price' or 'delivery_time'"
 // @Success 200 {array} model.Bid "List of bids"
-// @Failure 400 {object} map[string]string "Invalid tender ID"
+// @Failure 400 {object} map[string]string "Invalid tender ID or query parameters"
+// @Failure 403 {object} map[string]string "Access denied"
 // @Failure 404 {object} map[string]string "No bids found"
 // @Security Bearer
 // @Router /api/client/tenders/{id}/bids [get]
@@ -75,8 +79,18 @@ func GetBidsByTenderID(c *gin.Context) {
 		return
 	}
 
-	bids, err := bidService.GetBidsByTenderID(tenderId, c.GetInt("user_id"))
+	userId := c.GetInt("user_id")
+
+	priceFilter, _ := strconv.ParseFloat(c.DefaultQuery("price", "0"), 64)
+	deliveryTimeFilter := c.DefaultQuery("delivery_time", "")
+	sortBy := c.DefaultQuery("sort_by", "")
+
+	bids, err := bidService.GetBidsByTenderID(tenderId, userId, priceFilter, deliveryTimeFilter, sortBy)
 	if err != nil {
+		if err.Error() == "Tender not found or access denied" {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
 		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
@@ -244,4 +258,36 @@ func AwardBidHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bid awarded successfully"})
+}
+
+// GetContractorBidHistory godoc
+// @Summary Retrieve Contractor's Bid History
+// @Description Retrieves a list of bids placed by a specific contractor
+// @Tags User
+// @Produce json
+// @Param id path int true "Contractor ID"
+// @Success 200 {array} model.Bid "List of bids placed by the contractor"
+// @Failure 400 {object} map[string]string "Invalid contractor ID"
+// @Failure 404 {object} map[string]string "No bids found for the contractor"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Security Bearer
+// @Router /api/users/{id}/bids [get]
+func GetContractorBidHistory(ctx *gin.Context) {
+	contractorID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid contractor ID"})
+		return
+	}
+
+	bids, err := bidService.GetBidsByContractor(contractorID)
+	if err != nil {
+		if err.Error() == "no bids found" {
+			ctx.JSON(http.StatusNotFound, gin.H{"message": "No bids found for this contractor"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch bid history", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, bids)
 }

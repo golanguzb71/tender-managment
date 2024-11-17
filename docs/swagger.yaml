@@ -296,13 +296,26 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve all bids for a given tender
+      description: Retrieve all bids for a given tender, with optional filtering and
+        sorting
       parameters:
       - description: Tender ID
         in: path
         name: id
         required: true
         type: integer
+      - description: Filter bids by price
+        in: query
+        name: price
+        type: number
+      - description: Filter bids by delivery time
+        in: query
+        name: delivery_time
+        type: string
+      - description: Sort by 'price' or 'delivery_time'
+        in: query
+        name: sort_by
+        type: string
       produces:
       - application/json
       responses:
@@ -313,7 +326,13 @@ paths:
               $ref: '#/definitions/model.Bid'
             type: array
         "400":
-          description: Invalid tender ID
+          description: Invalid tender ID or query parameters
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Access denied
           schema:
             additionalProperties:
               type: string
@@ -514,6 +533,88 @@ paths:
       summary: Create a bid for a tender
       tags:
       - bids
+  /api/users/{id}/bids:
+    get:
+      description: Retrieves a list of bids placed by a specific contractor
+      parameters:
+      - description: Contractor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of bids placed by the contractor
+          schema:
+            items:
+              $ref: '#/definitions/model.Bid'
+            type: array
+        "400":
+          description: Invalid contractor ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: No bids found for the contractor
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Retrieve Contractor's Bid History
+      tags:
+      - User
+  /api/users/{id}/tenders:
+    get:
+      description: Retrieves a list of tenders posted by a specific client
+      parameters:
+      - description: Client ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of tenders posted by the client
+          schema:
+            items:
+              $ref: '#/definitions/model.Tender'
+            type: array
+        "400":
+          description: Invalid client ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: No tenders found for the client
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: Retrieve Client's Tender History
+      tags:
+      - User
   /login:
     post:
       consumes:

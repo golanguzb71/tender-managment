@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"tender-managment/internal/model"
 )
 
@@ -12,6 +13,46 @@ type TenderRepository struct {
 
 func NewTenderRepository(db *sql.DB) *TenderRepository {
 	return &TenderRepository{db: db}
+}
+
+func (r *TenderRepository) GetTendersByClientID(clientID int) ([]model.GetTender, error) {
+	var tenders []model.GetTender
+	var role string
+	err := r.db.QueryRow(`SELECT role from users where id=$1`, clientID).Scan(&role)
+	if err != nil {
+		return nil, err
+	}
+	if role != "client" {
+		return nil, errors.New("tender history created by client")
+	}
+
+	query := `
+        SELECT 
+            t.id, t.title, t.description, t.deadline, t.budget, 
+            t.status, t.created_at, 
+            (SELECT COUNT(*) FROM bids b WHERE b.tender_id = t.id) AS bids_count
+        FROM tenders t
+        WHERE t.client_id = $1
+        ORDER BY t.created_at DESC`
+
+	rows, err := r.db.Query(query, clientID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch tenders: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tender model.GetTender
+		if err := rows.Scan(
+			&tender.ID, &tender.Title, &tender.Description, &tender.Deadline,
+			&tender.Budget, &tender.Status, &tender.CreatedAt, &tender.BidsCount,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan tender row: %w", err)
+		}
+		tenders = append(tenders, tender)
+	}
+
+	return tenders, nil
 }
 
 func (r *TenderRepository) CreateTender(tender *model.Tender) (*model.Tender, error) {

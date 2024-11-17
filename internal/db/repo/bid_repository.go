@@ -31,20 +31,26 @@ func (r *BidRepository) UpdateBidStatus(bid *model.Bid) error {
 
 func (r *BidRepository) GetBidsByContractorID(contractorID int) ([]model.Bid, error) {
 	var bids []model.Bid
-
-	query := `SELECT id, contractor_id, tender_id, price, delivery_time, comments, created_at 
+	var role string
+	err := r.db.QueryRow(`SELECT role from users where id=$1`, contractorID).Scan(&role)
+	if err != nil {
+		return nil, err
+	}
+	if role != "contractor" {
+		return nil, errors.New("bid history created by contractor")
+	}
+	query := `SELECT id, contractor_id, tender_id, price, delivery_time, comments, created_at ,status
 			  FROM bids WHERE contractor_id = $1`
 
 	rows, err := r.db.Query(query, contractorID)
 	if err != nil {
-		fmt.Println("error bo'ldi ichki ", err.Error())
 		return nil, fmt.Errorf("error fetching bids: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var bid model.Bid
-		if err := rows.Scan(&bid.ID, &bid.ContractorID, &bid.TenderID, &bid.Price, &bid.DeliveryTime, &bid.Comments, &bid.CreatedAt); err != nil {
+		if err := rows.Scan(&bid.ID, &bid.ContractorID, &bid.TenderID, &bid.Price, &bid.DeliveryTime, &bid.Comments, &bid.CreatedAt, &bid.Status); err != nil {
 			return nil, fmt.Errorf("error scanning bid row: %w", err)
 		}
 		bids = append(bids, bid)
@@ -137,4 +143,53 @@ func (r *BidRepository) AwardBid(bidID int) error {
 		return fmt.Errorf("")
 	}
 	return nil
+}
+
+func (r *BidRepository) GetBidsByTenderIDWithFilters(tenderID int, priceFilter float64, deliveryTimeFilter, sortBy string) ([]model.Bid, error) {
+	query := `
+        SELECT id, tender_id, contractor_id, price, delivery_time, status, created_at
+        FROM bids
+        WHERE tender_id = $1`
+
+	var args []interface{}
+	args = append(args, tenderID)
+
+	if priceFilter > 0 {
+		query += " AND price <= $2"
+		args = append(args, priceFilter)
+	}
+
+	if deliveryTimeFilter != "" {
+		query += " AND delivery_time = $3"
+		args = append(args, deliveryTimeFilter)
+	}
+
+	if sortBy == "price" {
+		query += " ORDER BY price"
+	} else if sortBy == "delivery_time" {
+		query += " ORDER BY delivery_time"
+	} else {
+		query += " ORDER BY price"
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bids []model.Bid
+	for rows.Next() {
+		var bid model.Bid
+		if err := rows.Scan(&bid.ID, &bid.TenderID, &bid.ContractorID, &bid.Price, &bid.DeliveryTime, &bid.Status, &bid.CreatedAt); err != nil {
+			return nil, err
+		}
+		bids = append(bids, bid)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return bids, nil
 }

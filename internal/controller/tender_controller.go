@@ -160,3 +160,35 @@ func DeleteTenderHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Tender deleted successfully"})
 }
+
+// GetClientTenderHistory godoc
+// @Summary Retrieve Client's Tender History
+// @Description Retrieves a list of tenders posted by a specific client
+// @Tags User
+// @Produce json
+// @Param id path int true "Client ID"
+// @Success 200 {array} model.Tender "List of tenders posted by the client"
+// @Failure 400 {object} map[string]string "Invalid client ID"
+// @Failure 404 {object} map[string]string "No tenders found for the client"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Security Bearer
+// @Router /api/users/{id}/tenders [get]
+func GetClientTenderHistory(ctx *gin.Context) {
+	clientID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid client ID"})
+		return
+	}
+
+	tenders, err := tenderService.ListTenders(clientID)
+	if err != nil {
+		if err.Error() == "no tenders found" {
+			ctx.JSON(http.StatusNotFound, gin.H{"message": "No tenders found for this client"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch tender history", "error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, tenders)
+}

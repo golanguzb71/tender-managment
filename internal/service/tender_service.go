@@ -18,6 +18,10 @@ func (s *TenderService) CreateTender(tender *model.Tender) (*model.Tender, error
 	return s.repo.CreateTender(tender)
 }
 
+func (s *TenderService) GetTendersByClient(clientID int) ([]model.GetTender, error) {
+	return s.repo.GetTendersByClientID(clientID)
+}
+
 func (s *TenderService) ListTenders(clientID int) ([]model.Tender, error) {
 	return s.repo.ListTendersByClientID(clientID)
 }

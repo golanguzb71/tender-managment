@@ -23,6 +23,17 @@ type CreateTender struct {
 	Attachment  string  `json:"attachment,omitempty"`
 }
 
+type GetTender struct {
+	ID          int       `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Deadline    time.Time `json:"deadline"`
+	Budget      float64   `json:"budget"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	BidsCount   int       `json:"bids_count"`
+}
+
 type UpdateTenderStatusRequest struct {
 	Status string `json:"status"`
 }
