@@ -1,11 +1,14 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"tender-managment/internal/model"
 	"tender-managment/internal/service"
+	"time"
 )
 
 var (
@@ -15,6 +18,15 @@ var (
 func SetBidService(bidSer *service.BidService) {
 	bidService = bidSer
 }
+
+const (
+	bidsByTenderKey     = "bids:tender:%d"
+	bidsByContractorKey = "bids:contractor:%d"
+	bidDetailKey        = "bid:%d"
+
+	bidListCacheDuration   = 5 * time.Minute
+	bidDetailCacheDuration = 5 * time.Minute
+)
 
 // CreateBidHandler godoc
 // @Summary Create a bid for a tender
@@ -53,6 +65,11 @@ func CreateBidHandler(c *gin.Context) {
 		return
 	}
 
+	tenderBidsKey := fmt.Sprintf(bidsByTenderKey, tenderId)
+	contractorBidsKey := fmt.Sprintf(bidsByContractorKey, contractorId)
+	_ = redisClient.Del(c.Request.Context(), tenderBidsKey)
+	_ = redisClient.Del(c.Request.Context(), contractorBidsKey)
+
 	c.JSON(status, createdBid)
 }
 
@@ -80,6 +97,16 @@ func GetBidsByTenderID(c *gin.Context) {
 	}
 
 	userId := c.GetInt("user_id")
+	cacheKey := fmt.Sprintf(bidsByTenderKey, tenderId)
+
+	cachedData, err := redisClient.Get(c.Request.Context(), cacheKey)
+	if err == nil && cachedData != "" {
+		var bids []model.Bid
+		if err := json.Unmarshal([]byte(cachedData), &bids); err == nil {
+			c.JSON(http.StatusOK, bids)
+			return
+		}
+	}
 
 	priceFilter, _ := strconv.ParseFloat(c.DefaultQuery("price", "0"), 64)
 	deliveryTimeFilter := c.DefaultQuery("delivery_time", "")
@@ -93,6 +120,10 @@ func GetBidsByTenderID(c *gin.Context) {
 		}
 		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
+	}
+
+	if bidsJSON, err := json.Marshal(bids); err == nil {
+		_ = redisClient.Set(c.Request.Context(), cacheKey, bidsJSON, bidListCacheDuration)
 	}
 
 	c.JSON(http.StatusOK, bids)
@@ -118,11 +149,26 @@ func GetBidByIDHandler(c *gin.Context) {
 	}
 
 	contractorId := c.GetInt("user_id")
+	cacheKey := fmt.Sprintf(bidDetailKey, bidId)
+	cachedData, err := redisClient.Get(c.Request.Context(), cacheKey)
+	if err == nil && cachedData != "" {
+		var bid model.Bid
+		if err := json.Unmarshal([]byte(cachedData), &bid); err == nil {
+			if bid.ContractorID == contractorId {
+				c.JSON(http.StatusOK, bid)
+				return
+			}
+		}
+	}
 
 	bid, err := bidService.GetBidByID(contractorId, bidId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
+	}
+
+	if bidJSON, err := json.Marshal(bid); err == nil {
+		_ = redisClient.Set(c.Request.Context(), cacheKey, bidJSON, bidDetailCacheDuration)
 	}
 
 	c.JSON(http.StatusOK, bid)
@@ -149,6 +195,7 @@ func UpdateBidStatusHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bid ID"})
 		return
 	}
+
 	var updateData model.UpdateBid
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
@@ -166,6 +213,12 @@ func UpdateBidStatusHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update bid status"})
 		return
 	}
+	bidDetailKey := fmt.Sprintf(bidDetailKey, bidId)
+	tenderBidsKey := fmt.Sprintf(bidsByTenderKey, bid.TenderID)
+	contractorBidsKey := fmt.Sprintf(bidsByContractorKey, contractorId)
+	_ = redisClient.Del(c.Request.Context(), bidDetailKey)
+	_ = redisClient.Del(c.Request.Context(), tenderBidsKey)
+	_ = redisClient.Del(c.Request.Context(), contractorBidsKey)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Bid status updated successfully",
@@ -185,10 +238,25 @@ func UpdateBidStatusHandler(c *gin.Context) {
 // @Router /api/contractor/bids [get]
 func GetBidsByContractor(c *gin.Context) {
 	contractorId := c.GetInt("user_id")
+	cacheKey := fmt.Sprintf(bidsByContractorKey, contractorId)
+
+	cachedData, err := redisClient.Get(c.Request.Context(), cacheKey)
+	if err == nil && cachedData != "" {
+		var bids []model.Bid
+		if err := json.Unmarshal([]byte(cachedData), &bids); err == nil {
+			c.JSON(http.StatusOK, bids)
+			return
+		}
+	}
+
 	bids, err := bidService.GetBidsByContractor(contractorId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch bids"})
 		return
+	}
+
+	if bidsJSON, err := json.Marshal(bids); err == nil {
+		_ = redisClient.Set(c.Request.Context(), cacheKey, bidsJSON, bidListCacheDuration)
 	}
 
 	c.JSON(http.StatusOK, bids)
@@ -214,10 +282,21 @@ func DeleteBidHandler(c *gin.Context) {
 	}
 
 	contractorId := c.GetInt("user_id")
+
+	bid, _ := bidService.GetBidByID(contractorId, bidId)
+
 	err = bidService.DeleteBid(contractorId, bidId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
+	}
+	if bid != nil {
+		bidDetailKey := fmt.Sprintf(bidDetailKey, bidId)
+		tenderBidsKey := fmt.Sprintf(bidsByTenderKey, bid.TenderID)
+		contractorBidsKey := fmt.Sprintf(bidsByContractorKey, contractorId)
+		_ = redisClient.Del(c.Request.Context(), bidDetailKey)
+		_ = redisClient.Del(c.Request.Context(), tenderBidsKey)
+		_ = redisClient.Del(c.Request.Context(), contractorBidsKey)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bid deleted successfully"})
@@ -257,26 +336,30 @@ func AwardBidHandler(c *gin.Context) {
 		return
 	}
 
+	tenderBidsKey := fmt.Sprintf(bidsByTenderKey, tenderId)
+	bidDetailKey := fmt.Sprintf(bidDetailKey, bidId)
+	_ = redisClient.Del(c.Request.Context(), tenderBidsKey)
+	_ = redisClient.Del(c.Request.Context(), bidDetailKey)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Bid awarded successfully"})
 }
 
-// GetContractorBidHistory godoc
-// @Summary Retrieve Contractor's Bid History
-// @Description Retrieves a list of bids placed by a specific contractor
-// @Tags User
-// @Produce json
-// @Param id path int true "Contractor ID"
-// @Success 200 {array} model.Bid "List of bids placed by the contractor"
-// @Failure 400 {object} map[string]string "Invalid contractor ID"
-// @Failure 404 {object} map[string]string "No bids found for the contractor"
-// @Failure 500 {object} map[string]string "Internal server error"
-// @Security Bearer
-// @Router /api/users/{id}/bids [get]
 func GetContractorBidHistory(ctx *gin.Context) {
 	contractorID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid contractor ID"})
 		return
+	}
+
+	cacheKey := fmt.Sprintf(bidsByContractorKey, contractorID)
+
+	cachedData, err := redisClient.Get(ctx.Request.Context(), cacheKey)
+	if err == nil && cachedData != "" {
+		var bids []model.Bid
+		if err := json.Unmarshal([]byte(cachedData), &bids); err == nil {
+			ctx.JSON(http.StatusOK, bids)
+			return
+		}
 	}
 
 	bids, err := bidService.GetBidsByContractor(contractorID)
@@ -287,6 +370,10 @@ func GetContractorBidHistory(ctx *gin.Context) {
 		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch bid history", "error": err.Error()})
 		return
+	}
+
+	if bidsJSON, err := json.Marshal(bids); err == nil {
+		_ = redisClient.Set(ctx.Request.Context(), cacheKey, bidsJSON, bidListCacheDuration)
 	}
 
 	ctx.JSON(http.StatusOK, bids)

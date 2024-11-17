@@ -4,11 +4,11 @@ server:
 database:
   postgres:
     port: 5432
-    host: "localhost"
+    host: "db"
     password: "postgres"
     username: "postgres"
-    db_name: "postgres"
+    db_name: "tenderdb"
   redis:
-    address: "localhost:6379"
+    address: "redis:6379"
     password:
-    db_name: 0  
+    db_name: 0

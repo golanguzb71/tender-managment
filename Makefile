@@ -10,7 +10,7 @@ migrate-down:
 	docker compose exec db psql -U postgres -d tenderdb -f /docker-entrypoint-initdb.d/tables-down.sql
 
 run_db:
-	docker compose build db && docker compose up -d db
+	docker compose build db && docker compose up -d db && docker compose up -d redis
 	make migrate-up
 
 run:

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
 	_ "tender-managment/docs"
@@ -29,7 +28,6 @@ func main() {
 	}
 	database := db.NewDatabase(&cfg.Database)
 	redis := db.NewRedisClient(&cfg.Database)
-	fmt.Println(redis)
 	userRepo := repository.NewUserRepository(database)
 	authService := service.NewAuthService(userRepo)
 	tenderRepo := repository.NewTenderRepository(database)
@@ -38,7 +36,7 @@ func main() {
 	bidService := service.NewBidService(*bidRepo, *tenderRepo, *userRepo)
 	userService := service.NewUserService(userRepo)
 	controller.SetAuthService(authService)
-	controller.SetTenderService(tenderService)
+	controller.SetTenderService(tenderService, redis)
 	controller.SetBidService(bidService)
 	controller.SetUserService(userService)
 	routes.SetupRoutes(r)

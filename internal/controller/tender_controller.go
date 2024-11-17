@@ -1,20 +1,30 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+	"tender-managment/internal/db"
 	"tender-managment/internal/model"
 	"tender-managment/internal/service"
 	"time"
 )
 
-var (
-	tenderService *service.TenderService
+const (
+	tenderListCacheKey = "tenders:client:%d"
+	cacheExpiration    = 5 * time.Minute
 )
 
-func SetTenderService(tenderSer *service.TenderService) {
+var (
+	tenderService *service.TenderService
+	redisClient   *db.Redis
+)
+
+func SetTenderService(tenderSer *service.TenderService, redis *db.Redis) {
 	tenderService = tenderSer
+	redisClient = redis
 }
 
 // CreateTenderHandler godoc
@@ -64,6 +74,9 @@ func CreateTenderHandler(c *gin.Context) {
 		return
 	}
 
+	cacheKey := fmt.Sprintf(tenderListCacheKey, tender.ClientID)
+	_ = redisClient.Del(c.Request.Context(), cacheKey)
+
 	c.JSON(http.StatusCreated, createdTender)
 }
 
@@ -78,10 +91,25 @@ func CreateTenderHandler(c *gin.Context) {
 // @Router /api/client/tenders [get]
 func ListTendersHandler(c *gin.Context) {
 	clientID := c.GetInt("user_id")
+	cacheKey := fmt.Sprintf(tenderListCacheKey, clientID)
+
+	cachedData, err := redisClient.Get(c.Request.Context(), cacheKey)
+	if err == nil && cachedData != "" {
+		var tenders []model.Tender
+		if err := json.Unmarshal([]byte(cachedData), &tenders); err == nil {
+			c.JSON(http.StatusOK, tenders)
+			return
+		}
+	}
+
 	tenders, err := tenderService.ListTenders(clientID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch tenders"})
 		return
+	}
+
+	if tendersJSON, err := json.Marshal(tenders); err == nil {
+		_ = redisClient.Set(c.Request.Context(), cacheKey, tendersJSON, cacheExpiration)
 	}
 
 	c.JSON(http.StatusOK, tenders)
@@ -127,6 +155,9 @@ func UpdateTenderStatusHandler(c *gin.Context) {
 		return
 	}
 
+	cacheKey := fmt.Sprintf(tenderListCacheKey, clientID)
+	_ = redisClient.Del(c.Request.Context(), cacheKey)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Tender status updated successfully"})
 }
 
@@ -158,6 +189,9 @@ func DeleteTenderHandler(c *gin.Context) {
 		return
 	}
 
+	cacheKey := fmt.Sprintf(tenderListCacheKey, clientID)
+	_ = redisClient.Del(c.Request.Context(), cacheKey)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Tender deleted successfully"})
 }
 
@@ -180,6 +214,16 @@ func GetClientTenderHistory(ctx *gin.Context) {
 		return
 	}
 
+	cacheKey := fmt.Sprintf(tenderListCacheKey, clientID)
+	cachedData, err := redisClient.Get(ctx.Request.Context(), cacheKey)
+	if err == nil && cachedData != "" {
+		var tenders []model.Tender
+		if err := json.Unmarshal([]byte(cachedData), &tenders); err == nil {
+			ctx.JSON(http.StatusOK, tenders)
+			return
+		}
+	}
+
 	tenders, err := tenderService.ListTenders(clientID)
 	if err != nil {
 		if err.Error() == "no tenders found" {
@@ -188,6 +232,10 @@ func GetClientTenderHistory(ctx *gin.Context) {
 		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch tender history", "error": err.Error()})
 		return
+	}
+
+	if tendersJSON, err := json.Marshal(tenders); err == nil {
+		_ = redisClient.Set(ctx.Request.Context(), cacheKey, tendersJSON, cacheExpiration)
 	}
 
 	ctx.JSON(http.StatusOK, tenders)
