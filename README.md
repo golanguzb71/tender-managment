@@ -16,7 +16,7 @@ Follow the steps below to set up and run the project locally.
 ### 1. Enter project
 
 ```bash
-cd tender-management-backend
+cd tender-management
 ```
 ### 2. Init postgresql database and redis client
 ```bash
